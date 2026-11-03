@@ -48,8 +48,9 @@ O SQLite continua atendendo o fluxo e o histórico do Node-RED. O PostgreSQL é 
 ## 5. Pipeline de dados
 
 ```mermaid
+
 sequenceDiagram
-    participant ESP as ESP32 / sensores
+    participant ESP as ESP32 / Sensores
     participant MQTT as HiveMQ (MQTT)
     participant NR as Node-RED
     participant SQLite as SQLite local
@@ -58,28 +59,33 @@ sequenceDiagram
     participant ML as Serviço Python
     participant Web as Frontend
 
-    Note over NR,API: A ramificação HTTP está no JSON exportado, mas precisa ter os wires corrigidos e ser validada no Node-RED antes do Deploy.
+    Note over NR,API: A ramificação HTTP foi adicionada ao flow e deve ser validada antes do Deploy.
+
     loop A cada ciclo do firmware (2 segundos)
-        ESP->>MQTT: publica status, comida e horário
-        MQTT->>NR: entrega as mensagens MQTT
-        NR->>NR: atualiza widgets e prepara evento por tópico
-        NR-->>API: POST /api/measurements (um evento por mensagem, após validar as conexões do flow)
-        NR->>SQLite: envia o Join quando os três tópicos chegam
+        ESP->>MQTT: Publica status, comida e horário
+        MQTT->>NR: Entrega mensagens MQTT
+        NR->>NR: Atualiza dashboard e prepara evento por tópico
+        NR->>API: POST /api/measurements (um evento por mensagem)
+        NR->>SQLite: Envia dados ao Join quando os três tópicos chegam
     end
-    API->>API: valida tópico e valor; calcula fingerprint
-    API->>PG: grava medição e atualiza dispositivo
-    opt Evento status/comida e ainda não houve análise neste minuto
-        API->>PG: consulta até 20.000 eventos daquele dispositivo
-        API->>ML: POST /analyze com o histórico
-        ML->>ML: agrega em janelas de um minuto e calcula 11 features
-        ML-->>API: resultado, score, versão e explicação
-        API->>PG: grava análise e, se anomalia, cria alerta
+
+    API->>API: Valida tópico e valor e calcula fingerprint
+    API->>PG: Registra medição e atualiza dispositivo
+
+    opt Evento de status ou comida e ainda não houve análise no minuto
+        API->>PG: Consulta até 20.000 eventos do dispositivo
+        API->>ML: POST /analyze com histórico
+        ML->>ML: Agrega janelas de 1 minuto e calcula 11 features
+        ML-->>API: Retorna resultado, score, versão e explicação
+        API->>PG: Registra análise e cria alerta se houver anomalia
     end
+
     loop Polling a cada 3 segundos
         Web->>API: GET dashboard, medições, análises e alertas
-        API->>PG: consulta dados persistidos
-        API-->>Web: devolve JSON atualizado
+        API->>PG: Consulta dados persistidos
+        API-->>Web: Retorna dados em JSON
     end
+
 ```
 
 ### Etapa 1 — Coleta
