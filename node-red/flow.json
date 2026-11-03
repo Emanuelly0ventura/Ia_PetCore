@@ -1,0 +1,762 @@
+[
+  {
+    "id": "556f124d2b9639ba",
+    "type": "tab",
+    "label": "Fluxo 2",
+    "disabled": false,
+    "info": "",
+    "env": []
+  },
+  {
+    "id": "565da0e4aeb32259",
+    "type": "mqtt in",
+    "z": "556f124d2b9639ba",
+    "name": "",
+    "topic": "petcore/status",
+    "qos": "2",
+    "datatype": "auto-detect",
+    "broker": "a0d7c8f8cf3264a2",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 650,
+    "y": 160,
+    "wires": [
+      [
+        "49eb1216d39032f2"
+      ]
+    ]
+  },
+  {
+    "id": "49eb1216d39032f2",
+    "type": "ui_text",
+    "z": "556f124d2b9639ba",
+    "group": "365f5ba4fe73f047",
+    "order": 0,
+    "width": 0,
+    "height": 0,
+    "name": "",
+    "label": "Distancia",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": 16,
+    "color": "#000000",
+    "x": 860,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "b4a3436af0cf6ce4",
+    "type": "mqtt in",
+    "z": "556f124d2b9639ba",
+    "name": "",
+    "topic": "petcore/horario",
+    "qos": "2",
+    "datatype": "auto-detect",
+    "broker": "a0d7c8f8cf3264a2",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 660,
+    "y": 220,
+    "wires": [
+      [
+        "1ce49f7bfb8d40ed"
+      ]
+    ]
+  },
+  {
+    "id": "1ce49f7bfb8d40ed",
+    "type": "ui_text",
+    "z": "556f124d2b9639ba",
+    "group": "365f5ba4fe73f047",
+    "order": 1,
+    "width": 0,
+    "height": 0,
+    "name": "",
+    "label": "Horario",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": 16,
+    "color": "#000000",
+    "x": 860,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "12d856c68800dca7",
+    "type": "sqlite",
+    "z": "556f124d2b9639ba",
+    "mydb": "18fde84bdd545512",
+    "sqlquery": "msg.topic",
+    "sql": "",
+    "name": "banco",
+    "x": 850,
+    "y": 440,
+    "wires": [
+      [
+        "ff5e4a608fd4ad25"
+      ]
+    ]
+  },
+  {
+    "id": "b1010ea0832fb50f",
+    "type": "function",
+    "z": "556f124d2b9639ba",
+    "name": "Mostrar dados",
+    "func": "msg.topic = `\nSELECT * FROM petcore\nORDER BY id DESC;\n`;\n\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 680,
+    "y": 440,
+    "wires": [
+      [
+        "12d856c68800dca7"
+      ]
+    ]
+  },
+  {
+    "id": "4067ccd7c8717887",
+    "type": "inject",
+    "z": "556f124d2b9639ba",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 460,
+    "y": 440,
+    "wires": [
+      [
+        "b1010ea0832fb50f"
+      ]
+    ]
+  },
+  {
+    "id": "0562e58d34d7cdd5",
+    "type": "mqtt in",
+    "z": "556f124d2b9639ba",
+    "name": "",
+    "topic": "petcore/status",
+    "qos": "2",
+    "datatype": "auto-detect",
+    "broker": "a0d7c8f8cf3264a2",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 430,
+    "y": 560,
+    "wires": [
+      [
+        "b83bba8b11574077",
+        "petcore-api-normalize"
+      ]
+    ]
+  },
+  {
+    "id": "5d341daa75a5f68f",
+    "type": "mqtt in",
+    "z": "556f124d2b9639ba",
+    "name": "",
+    "topic": "petcore/horario",
+    "qos": "2",
+    "datatype": "auto-detect",
+    "broker": "a0d7c8f8cf3264a2",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 440,
+    "y": 620,
+    "wires": [
+      [
+        "b83bba8b11574077",
+        "petcore-api-normalize"
+      ]
+    ]
+  },
+  {
+    "id": "27b261c5f08d4f2d",
+    "type": "comment",
+    "z": "556f124d2b9639ba",
+    "name": "Banco",
+    "info": "",
+    "x": 750,
+    "y": 380,
+    "wires": []
+  },
+  {
+    "id": "ff5e4a608fd4ad25",
+    "type": "debug",
+    "z": "556f124d2b9639ba",
+    "name": "debug 1",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1000,
+    "y": 440,
+    "wires": []
+  },
+  {
+    "id": "937fbd23cb287bf8",
+    "type": "inject",
+    "z": "556f124d2b9639ba",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 460,
+    "y": 680,
+    "wires": [
+      [
+        "c08104286dbccc48"
+      ]
+    ]
+  },
+  {
+    "id": "c08104286dbccc48",
+    "type": "function",
+    "z": "556f124d2b9639ba",
+    "name": "Tabela",
+    "func": "msg.topic = `CREATE TABLE IF NOT EXISTS petcore (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    horario varchar(40),\n    status varchar(40),\n    comida varchar(40)\n);\n`;\n\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 650,
+    "y": 680,
+    "wires": [
+      [
+        "da866d3d7ca23d85"
+      ]
+    ]
+  },
+  {
+    "id": "da866d3d7ca23d85",
+    "type": "sqlite",
+    "z": "556f124d2b9639ba",
+    "mydb": "18fde84bdd545512",
+    "sqlquery": "msg.topic",
+    "sql": "",
+    "name": "banco",
+    "x": 790,
+    "y": 680,
+    "wires": [
+      [
+        "5cd44b93d313d628"
+      ]
+    ]
+  },
+  {
+    "id": "5cd44b93d313d628",
+    "type": "debug",
+    "z": "556f124d2b9639ba",
+    "name": "debug 4",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 940,
+    "y": 680,
+    "wires": []
+  },
+  {
+    "id": "b83bba8b11574077",
+    "type": "join",
+    "z": "556f124d2b9639ba",
+    "name": "",
+    "mode": "custom",
+    "build": "object",
+    "property": "payload",
+    "propertyType": "msg",
+    "key": "topic",
+    "joiner": "\\n",
+    "joinerType": "str",
+    "useparts": false,
+    "accumulate": false,
+    "timeout": "5",
+    "count": "3",
+    "reduceRight": false,
+    "reduceExp": "",
+    "reduceInit": "",
+    "reduceInitType": "",
+    "reduceFixup": "",
+    "x": 640,
+    "y": 580,
+    "wires": [
+      [
+        "a3f05a3f6a261a35"
+      ]
+    ]
+  },
+  {
+    "id": "a3f05a3f6a261a35",
+    "type": "function",
+    "z": "556f124d2b9639ba",
+    "name": "Salvar dados",
+    "func": "const p=msg.payload||{}; const keys=[\"petcore/horario\",\"petcore/status\",\"petcore/comida\"]; if(!keys.every(k=>typeof p[k]===\"string\")) return null; const q=v=>String(v).replace(/'/g,\"''\"); msg.topic=`INSERT INTO petcore (horario,status,comida) VALUES ('${q(p[\"petcore/horario\"])}','${q(p[\"petcore/status\"])}','${q(p[\"petcore/comida\"])}');`; return msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 790,
+    "y": 580,
+    "wires": [
+      [
+        "6166336ef3f897b8"
+      ]
+    ]
+  },
+  {
+    "id": "1f288de29c00e5ba",
+    "type": "comment",
+    "z": "556f124d2b9639ba",
+    "name": "Dashboard",
+    "info": "",
+    "x": 760,
+    "y": 60,
+    "wires": []
+  },
+  {
+    "id": "6166336ef3f897b8",
+    "type": "sqlite",
+    "z": "556f124d2b9639ba",
+    "mydb": "18fde84bdd545512",
+    "sqlquery": "msg.topic",
+    "sql": "",
+    "name": "banco",
+    "x": 950,
+    "y": 580,
+    "wires": [
+      [
+        "01e6025983f03397"
+      ]
+    ]
+  },
+  {
+    "id": "01e6025983f03397",
+    "type": "debug",
+    "z": "556f124d2b9639ba",
+    "name": "debug 2",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1100,
+    "y": 580,
+    "wires": []
+  },
+  {
+    "id": "ebc08afbf06f1f49",
+    "type": "mqtt in",
+    "z": "556f124d2b9639ba",
+    "name": "",
+    "topic": "petcore/comida",
+    "qos": "2",
+    "datatype": "auto-detect",
+    "broker": "a0d7c8f8cf3264a2",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 660,
+    "y": 100,
+    "wires": [
+      [
+        "63b5bb9de340ce10"
+      ]
+    ]
+  },
+  {
+    "id": "63b5bb9de340ce10",
+    "type": "ui_text",
+    "z": "556f124d2b9639ba",
+    "group": "365f5ba4fe73f047",
+    "order": 2,
+    "width": 0,
+    "height": 0,
+    "name": "",
+    "label": "Comida",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "className": "",
+    "style": false,
+    "font": "",
+    "fontSize": 16,
+    "color": "#000000",
+    "x": 860,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "33fb0b6f9e0cefa0",
+    "type": "mqtt in",
+    "z": "556f124d2b9639ba",
+    "name": "",
+    "topic": "petcore/comida",
+    "qos": "2",
+    "datatype": "auto-detect",
+    "broker": "a0d7c8f8cf3264a2",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 440,
+    "y": 500,
+    "wires": [
+      [
+        "b83bba8b11574077",
+        "petcore-api-normalize"
+      ]
+    ]
+  },
+  {
+    "id": "90977484507727a5",
+    "type": "inject",
+    "z": "556f124d2b9639ba",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 460,
+    "y": 740,
+    "wires": [
+      [
+        "9f48b6db1d058c18"
+      ]
+    ]
+  },
+  {
+    "id": "9f48b6db1d058c18",
+    "type": "function",
+    "z": "556f124d2b9639ba",
+    "name": "Deletar tabela",
+    "func": "msg.topic = `drop table petcore;\n`;\n\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 680,
+    "y": 740,
+    "wires": [
+      [
+        "a73d3794f107ba4a"
+      ]
+    ]
+  },
+  {
+    "id": "a73d3794f107ba4a",
+    "type": "sqlite",
+    "z": "556f124d2b9639ba",
+    "mydb": "18fde84bdd545512",
+    "sqlquery": "msg.topic",
+    "sql": "",
+    "name": "banco",
+    "x": 850,
+    "y": 740,
+    "wires": [
+      [
+        "149995b93020d102"
+      ]
+    ]
+  },
+  {
+    "id": "149995b93020d102",
+    "type": "debug",
+    "z": "556f124d2b9639ba",
+    "name": "debug 3",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1000,
+    "y": 740,
+    "wires": []
+  },
+  {
+    "id": "6a10303e9dfe7a74",
+    "type": "sqlite",
+    "z": "556f124d2b9639ba",
+    "mydb": "18fde84bdd545512",
+    "sqlquery": "fixed",
+    "sql": "SELECT \n    id,\n    horario,\n    status,\n    comida\nFROM petcore\nORDER BY id DESC;",
+    "name": "banco",
+    "x": 710,
+    "y": 300,
+    "wires": [
+      [
+        "c6897cd0ee143fd3"
+      ]
+    ]
+  },
+  {
+    "id": "b10591703bdcd038",
+    "type": "inject",
+    "z": "556f124d2b9639ba",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 520,
+    "y": 300,
+    "wires": [
+      [
+        "6a10303e9dfe7a74"
+      ]
+    ]
+  },
+  {
+    "id": "c6897cd0ee143fd3",
+    "type": "ui_table",
+    "z": "556f124d2b9639ba",
+    "group": "365f5ba4fe73f047",
+    "name": "Historico",
+    "order": 5,
+    "width": 0,
+    "height": 0,
+    "columns": [
+      {
+        "field": "comida",
+        "title": "Comida",
+        "width": "",
+        "align": "left",
+        "formatter": "plaintext",
+        "formatterParams": {
+          "target": "_blank"
+        }
+      },
+      {
+        "field": "status",
+        "title": "Status",
+        "width": "",
+        "align": "left",
+        "formatter": "plaintext",
+        "formatterParams": {
+          "target": "_blank"
+        }
+      },
+      {
+        "field": "horario",
+        "title": "Horario",
+        "width": "",
+        "align": "left",
+        "formatter": "plaintext",
+        "formatterParams": {
+          "target": "_blank"
+        }
+      }
+    ],
+    "outputs": 0,
+    "cts": false,
+    "x": 860,
+    "y": 300,
+    "wires": []
+  },
+  {
+    "id": "a0d7c8f8cf3264a2",
+    "type": "mqtt-broker",
+    "name": "meu mqtt",
+    "broker": "54ebefe55d2e4a88af571fd3771fddf5.s1.eu.hivemq.cloud",
+    "port": "8883",
+    "tls": "",
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": true,
+    "protocolVersion": 4,
+    "keepalive": 60,
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthRetain": "false",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willRetain": "false",
+    "willPayload": "",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
+  },
+  {
+    "id": "365f5ba4fe73f047",
+    "type": "ui_group",
+    "name": "Monitor",
+    "tab": "d34f92952002d8d7",
+    "order": 1,
+    "disp": true,
+    "width": 6,
+    "collapse": false,
+    "className": ""
+  },
+  {
+    "id": "18fde84bdd545512",
+    "type": "sqlitedb",
+    "db": "C:\\Users\\ADM\\.node-red\\challenger.db",
+    "mode": "RWC"
+  },
+  {
+    "id": "d34f92952002d8d7",
+    "type": "ui_tab",
+    "name": "Sensor",
+    "icon": "dashboard",
+    "disabled": false,
+    "hidden": false
+  },
+  {
+    "id": "b42572da6a32008e",
+    "type": "global-config",
+    "env": [],
+    "modules": {
+      "node-red-dashboard": "3.6.6",
+      "node-red-node-sqlite": "2.0.1",
+      "node-red-node-ui-table": "0.4.5"
+    }
+  },
+  {
+    "id": "petcore-api-normalize",
+    "type": "function",
+    "z": "556f124d2b9639ba",
+    "name": "Enviar evento individual à API",
+    "func": "const allowed=['petcore/status','petcore/horario','petcore/comida']; if(!allowed.includes(msg.topic)) return null; const value=typeof msg.payload==='string'?msg.payload:JSON.stringify(msg.payload); msg.url=env.get('PETCORE_API_URL')||'http://localhost:5080/api/measurements'; msg.headers={'content-type':'application/json'}; msg.payload={deviceId:env.get('PETCORE_DEVICE_ID')||'PetCoreESP32',topic:msg.topic,value,eventTime:new Date().toISOString(),eventId:msg._msgid,data:{topic:msg.topic,value}}; return msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 760,
+    "y": 820,
+    "wires": [
+      "petcore-api-post"
+    ]
+  },
+  {
+    "id": "petcore-api-post",
+    "type": "http request",
+    "z": "556f124d2b9639ba",
+    "name": "POST Backend PetCore",
+    "method": "POST",
+    "ret": "obj",
+    "paytoqs": "ignore",
+    "url": "",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": true,
+    "headers": [],
+    "x": 1010,
+    "y": 820,
+    "wires": [
+      "petcore-api-debug"
+    ]
+  },
+  {
+    "id": "petcore-api-debug",
+    "type": "debug",
+    "z": "556f124d2b9639ba",
+    "name": "Resposta da API",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "statusCode",
+    "statusType": "msg",
+    "x": 1240,
+    "y": 820,
+    "wires": []
+  }
+]

@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: petcore-foodai-db
+    environment:
+      POSTGRES_DB: PetCoreFoodAI
+      POSTGRES_USER: petcore
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petcore -d PetCoreFoodAI"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  ml:
+    build: ./ml
+    environment: { MODEL_PATH: /data/model.joblib }
+    volumes: ["mlmodel:/data"]
+    ports: ["8000:8000"]
+  api:
+    build: ./backend/PetCore.Api
+    environment:
+      DATABASE_URL: Host=db;Port=5432;Database=PetCoreFoodAI;Username=petcore;Password=${POSTGRES_PASSWORD}
+      ML_URL: http://ml:8000
+      ASPNETCORE_URLS: http://+:5080
+      ASPNETCORE_ENVIRONMENT: Development
+    ports: ["5080:5080"]
+    depends_on:
+      db: { condition: service_healthy }
+      ml: { condition: service_started }
+  web:
+    image: nginx:alpine
+    volumes: ["./frontend:/usr/share/nginx/html:ro"]
+    ports: ["8080:80"]
+    depends_on: [api]
+volumes:
+  pgdata:
+  mlmodel:
