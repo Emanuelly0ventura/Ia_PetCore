@@ -1,5 +1,18 @@
 # PetCore Food AI
 
+## 🗣️ Dev do projeto
+#### NOME: Emanuelly Ventura Do Nascimento
+
+RM562339 - 2TDSPJ
+
+#### NOME: Carolina Nascimento Gonçalves
+
+RM564786 - 2TDSPJ
+
+#### NOME: Julia Sayuri Kina
+
+RM564555 - 2TDSPJ
+
 Sobre a integração:  Desenvolvemos um protótipo funcional para validar a integração dos componentes de IoT e Machine Learning. A estrutura foi organizada de forma modular para permitir sua incorporação à aplicação original do PetCore, com os ajustes necessários para compatibilização. O frontend presente neste repositório tem caráter demonstrativo e funcional, permitindo visualizar e testar os recursos desenvolvidos, sem representar uma substituição definitiva da interface original.
 
 ## 1. Sobre o projeto
@@ -360,7 +373,7 @@ Possibilidades futuras incluem validar o flow automaticamente, incluir Node-RED 
 
 ## 12. Demonstração e repositório
 
-- **Vídeo pitch (YouTube não listado):** [inserir link após publicação].
+- **Vídeo pitch (YouTube não listado):** https://youtu.be/NDPEXNtHrS0.
 - **Repositório GitHub:** [Emanuelly0ventura/Ia_PetCore](https://github.com/Emanuelly0ventura/Ia_PetCore).
 
 Para reproduzir a demonstração: clone o repositório, configure `.env`, suba o Compose, importe e valide o flow Node-RED, configure credenciais próprias do HiveMQ no firmware e publique os três tópicos. O firmware e um projeto Wokwi com `diagram.json` não estão nesta pasta; use o arquivo externo indicado na seção 5 e monte os sensores nos pinos descritos. Após validar os nós HTTP, confira medições e análises pela API, acumulando o mínimo de janelas. Inclua no pitch capturas reais desse processo.
