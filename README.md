@@ -3,15 +3,15 @@
 ## 🗣️ Dev do projeto
 #### NOME: Emanuelly Ventura Do Nascimento
 
-RM562339 - 2TDSPJ
+RM562339 - 2TDSPI
 
 #### NOME: Carolina Nascimento Gonçalves
 
-RM564786 - 2TDSPJ
+RM564786 - 2TDSPI
 
 #### NOME: Julia Sayuri Kina
 
-RM564555 - 2TDSPJ
+RM564555 - 2TDSPI
 
 Sobre a integração:  Desenvolvemos um protótipo funcional para validar a integração dos componentes de IoT e Machine Learning. A estrutura foi organizada de forma modular para permitir sua incorporação à aplicação original do PetCore, com os ajustes necessários para compatibilização. O frontend presente neste repositório tem caráter demonstrativo e funcional, permitindo visualizar e testar os recursos desenvolvidos, sem representar uma substituição definitiva da interface original.
 
