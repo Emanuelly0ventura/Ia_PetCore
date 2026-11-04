@@ -1,14 +1,12 @@
 # PetCore Food AI
 
+Sobre a integração:  Desenvolvemos um protótipo funcional para validar a integração dos componentes de IoT e Machine Learning. A estrutura foi organizada de forma modular para permitir sua incorporação à aplicação original do PetCore, com os ajustes necessários para compatibilização. O frontend presente neste repositório tem caráter demonstrativo e funcional, permitindo visualizar e testar os recursos desenvolvidos, sem representar uma substituição definitiva da interface original.
+
 ## 1. Sobre o projeto
 
-O PetCore propõe integrar tecnologia, monitoramento e automação para apoiar o acompanhamento da rotina dos animais. O **PetCore Food AI** é um protótipo independente voltado à tigela inteligente: usa sensores conectados a um ESP32 para registrar presença do pet perto do comedouro, presença ou ausência de alimento e horário das leituras.
+O PetCore propõe integrar tecnologia, monitoramento e automação para apoiar o acompanhamento da rotina dos animais. O PetCore Food AI é um protótipo independente voltado à tigela inteligente: usa sensores conectados a um ESP32 para registrar presença do pet perto do comedouro, presença ou ausência de alimento e horário das leituras.
 
 Os eventos podem ser consultados em um dashboard web e analisados ao longo do tempo por um modelo de Machine Learning. A análise procura padrões estatisticamente diferentes do histórico observado para fornecer informação adicional aos responsáveis pelo animal. Ela não substitui acompanhamento veterinário.
-
-## 2. Problema e justificativa
-
-Uma leitura isolada informa somente o estado detectado naquele instante. Sem histórico, é difícil perceber se a presença do animal ou a disponibilidade de comida mudou em relação à rotina observada. O projeto coleta eventos repetidos para formar uma série temporal e permite acompanhar essas mudanças.
 
 A tigela pode sinalizar presença ou ausência do pet e de comida. Os sensores ultrassônicos não pesam a ração e não medem quanto o animal comeu. Portanto, disponibilidade de comida não equivale a consumo real.
 
