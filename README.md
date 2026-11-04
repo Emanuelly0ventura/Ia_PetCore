@@ -194,6 +194,13 @@ O firmware permanece no projeto de IoT externo indicado na seção do pipeline.
 - Acesso ao HiveMQ Cloud e credenciais de MQTT configuradas localmente.
 - Para execução sem Docker: SDK .NET 8, Python 3.11 e PostgreSQL compatível com Npgsql.
 
+Clone o repositório e entre na pasta do projeto:
+
+```powershell
+git clone https://github.com/Emanuelly0ventura/Ia_PetCore.git
+Set-Location .\Ia_PetCore
+```
+
 ### Subir API, PostgreSQL, ML e frontend
 
 Na pasta `IaPetCore`, crie o arquivo local `.env`, edite a senha e rode o script. O script copia o exemplo e encerra na primeira execução se `.env` não existir; depois de editar, execute-o novamente.
@@ -265,19 +272,101 @@ Esperado para uma medição nova: `201 Created` com `accepted=true` e `id`. Reen
 
 Um `GET /api/ml/status` com `trained=false` é normal antes do mínimo. Depois de pelo menos 30 janelas, envie novos eventos de status/comida ou chame `POST /api/ml/train`. Verifique `GET /api/analyses` para o resultado e `GET /api/alerts` para um eventual alerta. Se Python estiver indisponível, confira `GET /api/ml/status`; medições continuam sendo guardadas no PostgreSQL.
 
-## 10. Limitações e possibilidades futuras
+## 10. Testes e validação
 
-- Os sensores informam estados derivados de distância. Não fornecem peso, volume nem consumo exato de alimento.
-- O fluxo HTTP do Node-RED está incluído no JSON, mas as conexões `wires` dos nós novos precisam ser corrigidas/confirmadas no Node-RED antes do uso real.
-- O banco SQLite depende do Node-RED e do caminho local; ele não é orquestrado nem copiado pelo Docker Compose.
-- O relógio MQTT é hora local sem data e fuso. A API também registra o instante de recebimento, que é usado para ordenar e agrupar janelas; `petcore/horario` fornece a característica de horário do dia.
-- O modelo exige 30 janelas válidas. Menos dados, leituras ausentes ou ruído de sensores atrasam ou reduzem a utilidade da análise.
-- Isolation Forest identifica desvio estatístico, não causa; anomalia não significa doença nem necessariamente problema alimentar.
-- O frontend é um protótipo local e a API está configurada com CORS aberto; não exponha os serviços à internet sem adicionar autenticação e controles de acesso. O projeto ainda não documenta avaliação quantitativa do modelo com dados rotulados. Uma operação prolongada deve ser acompanhada e o modelo treinado com dados representativos.
+Os cenários abaixo são verificações reproduzíveis. Não há evidência de execução ponta a ponta com ESP32/Wokwi, HiveMQ, Node-RED, PostgreSQL e serviço ML nesta versão. Preencha os campos de evidência com capturas, logs ou identificadores obtidos pela equipe; resultados esperados não são resultados observados.
 
-Possibilidades futuras incluem validar o flow automaticamente no Node-RED, incluir o Node-RED no Compose com volume SQLite configurado, proteger endpoints para uso fora da rede local, registrar timestamp com fuso no firmware e avaliar o modelo com dados revisados por responsáveis/técnicos.
+| Cenário | Procedimento | Resultado esperado | Estado/evidência |
+|---|---|---|---|
+| Configuração Compose | Criar `.env` e executar `docker compose config -q`. | Configuração válida, sem iniciar containers. | Validado estaticamente com senha local de exemplo. Evidência da equipe: [inserir log/data]. |
+| Inicialização | Executar `./scripts/start.ps1`; consultar `/health` da API e do ML. | Serviços ativos; API `status=ok`; ML informa mínimo de 30 janelas. | Não executado nesta revisão: Docker Engine inacessível. Evidência: [inserir captura/log]. |
+| Ingestão válida | Enviar o POST de exemplo da seção 9. | `201 Created`, `accepted=true`; medição consultável. | Esperado pelo código; integração real pendente. Evidência: [inserir resposta/consulta]. |
+| Deduplicação | Reenviar `deviceId`, `topic` e `eventId` idênticos. | `200 OK`, `duplicate=true`; sem duplicata. | Esperado pelo código; não exercitado com banco real. Evidência: [inserir resposta]. |
+| Payload inválido | Enviar tópico ou valor não permitido. | `400`; evento não persistido. | Execução pendente. Evidência: [inserir payload/resposta]. |
+| Histórico insuficiente | Formar menos de 30 janelas completas e enviar evento status/comida. | `result=coletando`, `score=null`; ML sem modelo treinado. | Esperado pelo código; execução pendente. Evidência: [inserir resposta/captura]. |
+| Mínimo de dados | Acumular 30 janelas completas e enviar novo evento. | Treino automático se necessário e classificação `normal` ou `anomalia`. | Dependente de dados reais; nenhuma classificação observada documentada. Evidência: [inserir amostra/resposta]. |
+| IoT até API | Publicar os três tópicos pelo ESP32/Wokwi e observar MQTT, Node-RED e API. | Mensagens recebidas; após corrigir/validar `wires`, eventos chegam à API. | Pendente: flow HTTP precisa de validação; firmware/Wokwi não está neste repositório. Evidência: [inserir vídeo/log]. |
 
-## 11. Conclusão
+### Exemplos ilustrativos de resposta da IA
+
+Os exemplos ilustram o contrato do serviço FastAPI (`POST /analyze`); **não são respostas reais registradas**. IDs, horários, scores e explicações são demonstrativos. O score de `decision_function` não representa confiança nem probabilidade.
+
+**Coletando** (menos de 30 janelas):
+
+```json
+{
+  "measurementId": 101,
+  "result": "coletando",
+  "score": null,
+  "model": "IsolationForest",
+  "version": null,
+  "analyzedAt": "2026-11-03T12:00:00Z",
+  "explanation": "Coletando histórico: 12 de 30 janelas de um minuto com estados válidos de presença e comida."
+}
+```
+
+**Normal** (decisão `1`):
+
+```json
+{
+  "measurementId": 102,
+  "result": "normal",
+  "score": 0.08,
+  "model": "IsolationForest",
+  "version": "2.0.0",
+  "parameters": { "n_estimators": 100, "contamination": 0.05, "random_state": 42, "window": "1 minute" },
+  "analyzedAt": "2026-11-03T12:31:00Z",
+  "explanation": "Exemplo ilustrativo: comportamento classificado como normal pelo modelo."
+}
+```
+
+**Anomalia** (decisão `-1`):
+
+```json
+{
+  "measurementId": 103,
+  "result": "anomalia",
+  "score": -0.07,
+  "model": "IsolationForest",
+  "version": "2.0.0",
+  "parameters": { "n_estimators": 100, "contamination": 0.05, "random_state": 42, "window": "1 minute" },
+  "analyzedAt": "2026-11-03T13:15:00Z",
+  "explanation": "Exemplo ilustrativo: padrão de presença/alimentação fora do histórico observado."
+}
+```
+
+O texto de `explanation` depende dos dados e da execução. A API persiste análises e, em `anomalia`, cria alerta; isso não é diagnóstico.
+
+## 11. Resultados parciais e limitações técnicas e científicas
+
+### Resultados parciais observados
+
+- A inspeção estática confirma os serviços da API, PostgreSQL, ML e frontend no Compose e a existência do flow de referência Node-RED.
+- Foram validados estaticamente: compilação .NET sem warnings/erros, sintaxe Python do serviço, sintaxe JavaScript do frontend, parse JSON do flow e configuração do Compose.
+- Não foi possível executar containers porque o Docker Engine não estava acessível. O runtime Python local também não tinha FastAPI instalado.
+- Não foram executados testes ponta a ponta, publicação via Wokwi/ESP32, acesso ao HiveMQ, persistência integrada em PostgreSQL nem inferência sobre dados reais. A ramificação HTTP do flow requer correção/validação dos `wires`.
+- Não há conjunto rotulado, avaliação quantitativa, precisão, recall, F1, taxa de falsos positivos ou validação clínica documentados. Parâmetros configurados não são métricas de eficácia.
+
+### Limitações conhecidas
+
+- Os sensores informam estados derivados de distância; não medem peso, volume ou consumo exato de alimento.
+- O flow HTTP está no JSON, mas as conexões `wires` novas precisam ser corrigidas/confirmadas no editor Node-RED antes do uso real.
+- O SQLite depende da instalação Node-RED e de caminho local; não é orquestrado pelo Compose.
+- O firmware publica horário local sem data/fuso. A API registra o instante de recebimento; `petcore/horario` fornece contexto de horário do dia.
+- O modelo requer 30 janelas válidas; lacunas e ruído atrasam/reduzem a utilidade da análise.
+- O modelo é global por instalação. O treino manual usa os 20.000 eventos recentes sem filtro por dispositivo, enquanto a análise automática usa histórico do dispositivo, podendo misturar rotinas.
+- Isolation Forest identifica desvio estatístico, não causa. Anomalia não significa doença nem necessariamente problema alimentar.
+- O frontend é protótipo local e a API usa CORS aberto; para exposição externa são necessários autenticação e controles de acesso. Não há avaliação quantitativa com dados rotulados.
+
+Possibilidades futuras incluem validar o flow automaticamente, incluir Node-RED no Compose com volume SQLite, proteger endpoints, registrar timestamp com fuso e avaliar o modelo com dados representativos revisados por responsáveis/técnicos.
+
+## 12. Demonstração e repositório
+
+- **Vídeo pitch (YouTube não listado):** [inserir link após publicação].
+- **Repositório GitHub:** [Emanuelly0ventura/Ia_PetCore](https://github.com/Emanuelly0ventura/Ia_PetCore).
+
+Para reproduzir a demonstração: clone o repositório, configure `.env`, suba o Compose, importe e valide o flow Node-RED, configure credenciais próprias do HiveMQ no firmware e publique os três tópicos. O firmware e um projeto Wokwi com `diagram.json` não estão nesta pasta; use o arquivo externo indicado na seção 5 e monte os sensores nos pinos descritos. Após validar os nós HTTP, confira medições e análises pela API, acumulando o mínimo de janelas. Inclua no pitch capturas reais desse processo.
+## 13. Conclusão
 
 O PetCore Food AI conecta leituras IoT a uma cadeia de integração, persistência e análise. O Node-RED mantém o acompanhamento operacional e o histórico SQLite; a API registra eventos e coordena o acesso ao PostgreSQL e ao serviço Python; o Isolation Forest resume o histórico e sinaliza padrões incomuns; o frontend apresenta os dados aos responsáveis.
 

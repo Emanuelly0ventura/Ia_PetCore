@@ -8,7 +8,8 @@ using PetCore.Api.Models;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddHttpClient("ml", c => { c.BaseAddress = new Uri(Environment.GetEnvironmentVariable("ML_URL") ?? "http://localhost:8000"); c.Timeout = TimeSpan.FromSeconds(3); });
+// A 20,000-point history can take longer than a few seconds to aggregate and fit on first use.
+builder.Services.AddHttpClient("ml", c => { c.BaseAddress = new Uri(Environment.GetEnvironmentVariable("ML_URL") ?? "http://localhost:8000"); c.Timeout = TimeSpan.FromSeconds(30); });
 builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(Environment.GetEnvironmentVariable("DATABASE_URL") ?? "Host=localhost;Port=5432;Database=PetCoreFoodAI;Username=petcore;Password=change-me"));
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 var app = builder.Build();
@@ -43,7 +44,24 @@ app.MapGet("/api/dashboard", async (AppDbContext db) =>
 });
 app.MapGet("/api/ml/status", async (IHttpClientFactory f) => { try { return Results.Ok(await (await f.CreateClient("ml").GetAsync("/health")).Content.ReadFromJsonAsync<JsonElement>()); } catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException) { return Results.Json(new { status = "indisponível" }, statusCode: 503); } });
 
-app.MapPost("/api/measurements", async (IngestRequest req, AppDbContext db, IHttpClientFactory clients) =>
+async Task<List<HistoryPoint>> LoadHistory(AppDbContext db, int? deviceId = null, long? excludeMeasurementId = null)
+{
+    var query = db.Measurements.AsNoTracking().Where(x =>
+        (x.Sensor == "petcore/status" || x.Sensor == "petcore/comida" || x.Sensor == "petcore/horario") &&
+        (deviceId == null || x.DeviceId == deviceId.Value) &&
+        (excludeMeasurementId == null || x.Id != excludeMeasurementId.Value));
+
+    // Bound the database read using ingestion order, then sort only those rows by the event time sent to Python.
+    var newest = await query
+        .OrderByDescending(x => x.ReceivedAt)
+        .ThenByDescending(x => x.Id)
+        .Take(20000)
+        .Select(x => new HistoryPoint(x.Id, x.Sensor, x.Value, x.MeasuredAt ?? x.ReceivedAt))
+        .ToListAsync();
+    return newest.OrderBy(x => x.At).ThenBy(x => x.Id).ToList();
+}
+
+app.MapPost("/api/measurements", async (IngestRequest req, AppDbContext db, IHttpClientFactory clients, ILogger<Program> logger) =>
 {
     var validTopic = req.Topic is "petcore/status" or "petcore/horario" or "petcore/comida";
     var validValue = req.Topic switch
@@ -78,8 +96,7 @@ app.MapPost("/api/measurements", async (IngestRequest req, AppDbContext db, IHtt
             var minuteStart = new DateTimeOffset(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, TimeSpan.Zero);
             var alreadyAnalyzed = await db.AiAnalyses.AnyAsync(x => x.Measurement!.DeviceId == device.Id && x.AnalyzedAt >= minuteStart);
             if (alreadyAnalyzed) return Results.Created($"/api/measurements/{measurement.Id}", new { accepted = true, id = measurement.Id, analysis = "already_analyzed_this_minute" });
-            var recentHistory = await db.Measurements.Where(x => x.DeviceId == device.Id && x.Id != measurement.Id && (x.Sensor == "petcore/status" || x.Sensor == "petcore/comida" || x.Sensor == "petcore/horario")).OrderByDescending(x => x.ReceivedAt).Take(20000).Select(x => new { x.Id, topic = x.Sensor, x.Value, at = x.MeasuredAt ?? x.ReceivedAt }).ToListAsync();
-            var history = recentHistory.AsEnumerable().Reverse().ToList();
+            var history = await LoadHistory(db, device.Id, measurement.Id);
             var response = await clients.CreateClient("ml").PostAsJsonAsync("/analyze", new { measurementId = measurement.Id, deviceId = device.Identifier, topic = measurement.Sensor, value = measurement.Value, at = measurement.MeasuredAt ?? measurement.ReceivedAt, history });
             if (response.IsSuccessStatusCode)
             {
@@ -94,8 +111,12 @@ app.MapPost("/api/measurements", async (IngestRequest req, AppDbContext db, IHtt
                 await db.SaveChangesAsync();
                 if (state == "anomalia") { db.Alerts.Add(new Alert { AnalysisId = analysis.Id, MeasurementId = measurement.Id, Title = "Padrão de presença/alimentação fora do histórico", Message = explanation }); await db.SaveChangesAsync(); }
             }
+            else
+            {
+                logger.LogWarning("Serviço ML respondeu {StatusCode} ao analisar a medição {MeasurementId}: {Body}", (int)response.StatusCode, measurement.Id, await response.Content.ReadAsStringAsync());
+            }
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException) { /* Measurement remains stored; ML status is independently visible. */ }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException) { logger.LogWarning(ex, "Falha ao chamar serviço ML para medição {MeasurementId}; a medição foi persistida e poderá ser reprocessada por uma nova leitura.", measurement.Id); }
     }
     return Results.Created($"/api/measurements/{measurement.Id}", new { accepted = true, id = measurement.Id });
 });
@@ -104,17 +125,17 @@ app.MapPost("/api/ml/train", async (AppDbContext db, IHttpClientFactory f) =>
 {
     try
     {
-        var latest = await db.Measurements.Where(x => x.Sensor == "petcore/status" || x.Sensor == "petcore/comida" || x.Sensor == "petcore/horario").OrderByDescending(x => x.ReceivedAt).Take(20000).Select(x => new { x.Id, topic = x.Sensor, x.Value, at = x.MeasuredAt ?? x.ReceivedAt }).ToListAsync();
-        var history = latest.AsEnumerable().Reverse().ToList();
+        var history = await LoadHistory(db);
         var response = await f.CreateClient("ml").PostAsJsonAsync("/train", new { history });
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        if (response.IsSuccessStatusCode && body.TryGetProperty("status", out var status) && status.GetString() == "treinado")
+        if (response.IsSuccessStatusCode && body.TryGetProperty("status", out var status) && status.GetString() is "treinado" or "ja_treinado")
         {
             var model = await db.AiModels.FirstAsync();
             model.Status = "Treinado";
-            model.TrainedAt = body.GetProperty("trainedAt").GetDateTimeOffset();
+            if (body.TryGetProperty("trainedAt", out var trainedAt) && trainedAt.ValueKind == JsonValueKind.String)
+                model.TrainedAt = trainedAt.GetDateTimeOffset();
             model.Version = body.GetProperty("version").GetString() ?? model.Version;
-            model.Parameters = body.GetProperty("parameters").GetRawText();
+            if (body.TryGetProperty("parameters", out var parameters)) model.Parameters = parameters.GetRawText();
             await db.SaveChangesAsync();
         }
         return Results.Content(body.GetRawText(), "application/json", statusCode: (int)response.StatusCode);
@@ -122,3 +143,5 @@ app.MapPost("/api/ml/train", async (AppDbContext db, IHttpClientFactory f) =>
     catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException) { return Results.Json(new { error = "Serviço ML indisponível" }, statusCode: 503); }
 });
 app.Run();
+
+public sealed record HistoryPoint(long Id, string Topic, string Value, DateTimeOffset At);
